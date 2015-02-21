@@ -1,0 +1,65 @@
+---
+title: "Economic and Human Impact of Severe Storms"
+output: html_document
+---
+
+##Synopsis
+The following is an attempt to answer two big questions about the impact of severe storms: namely which types of severe weather events are most harmful to human health, and which events have the most severe economic consequences. In order to answer the questions of which weather events are most impactful in these two areas, I analyze [storm data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) from the National Oceanic and Atmospheric Association (NOAA) collected over a span of 61 years, 1950 through 2011. Documentation for this dataset can found in PDF form [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf).
+
+##Data Processing
+
+### Loading The Initial Data in the R Environment
+First we need to download the store data dataset from the cousera class website. I'll put it in a directory called BigData in my project directory tree that will be ignored by Git, since the filesize of 47MB is over Github's filesize of 20MB. I check to make sure we've already downloaded the file, and if not, then I grab it. Once downloaded, we load the csv from the bz2 file.
+
+```{r stormDataLoad, cache=TRUE}
+dir.create("BigData", showWarnings=FALSE)
+if(!(file.exists("BigData/StormData.csv.bz2"))){
+   download.file(url="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2",
+                 method="curl",
+                 destfile="BigData/StormData.csv.bz2",
+                 quiet=TRUE)
+   }
+if(!(exists("StormData"))){
+   StormData <- read.csv(bzfile("BigData/StormData.csv.bz2"))
+}
+```
+
+### Importing Useful Libraries
+Any time I am going to need to transform data, group and summarize by different grains of data, I use Hadley Wickham's [dplyr](http://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf) package. For plotting, I much prefer Hadley Wickham's ggplot2 library.
+```{r importLibs}
+suppressMessages(require(dplyr))
+suppressMessages(require(ggplot2))
+```
+
+### Data Exploration
+First, I'll just call the str dataset to see which variables might be interesting.
+```{r str, cache=TRUE}
+str(StormData)
+```
+It looks like out of the 37 variables available in the dataset, the following might be needed in my analysis: EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP. I'll summarize these to get a sense of their values and distribution:
+```{r summary, cache=TRUE}
+summary(select(StormData, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP))
+```
+From this, it looks like the PROPDMGEXP and CROPDMGEXP fields specify a scale modifier for their numeric fields, so the values will need to be converted to a common scale. Reading the documentation cited in the synopsis portion of this analysis, we find:
+
+>Estimates should be rounded to three significant digits, followed by an alphabetical character signifying the magnitude of the number, i.e., 1.55B for $1,550,000,000. Alphabetical characters used to signify magnitude include “K” for thousands, “M” for millions, and “B” for billions.  
+
+With that in mind, I'll look at tables of these values.
+```{r tableExps, cache=TRUE}
+table(StormData$PROPDMGEXP)
+table(StormData$CROPDMGEXP)
+```
+
+I want to get a sense of what events are common, so I'll first count by event type and sort descending.
+```{r sortDescEvent, cache=TRUE}
+StormData %>%
+   group_by(EVTYPE) %>%
+   summarize(
+      count = n()
+   ) %>%
+   select(EVTYPE, count) %>%
+   arrange(desc(count))
+```
+
+##Results
+The results are interesting in that xxxx seems to be the most impactful to humanhealth when they strike, but they are rare, while yyyy is most damage in a slow and steady ploddingly consistent way.
